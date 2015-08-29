@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "babel-node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Aquest Technologies",
@@ -12,6 +12,7 @@
   "dependencies": {
     "babel": "^5.8.23",
     "hapi": "^9.0.3",
+    "inert": "^3.0.1",
     "uuid": "^2.0.1"
   }
 }
