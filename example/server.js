@@ -13,7 +13,7 @@ server.register(inert, err => {
   server.route([
     {
       method: 'GET',
-      path: '/img/{subfolder}/{file}',
+      path: '/images/{subfolder}/{file}',
       handler: (request, reply) => reply.file(`images/${request.params.subfolder}/${request.params.file}`),
     },
     {
@@ -22,7 +22,6 @@ server.register(inert, err => {
       handler: (request, reply) => {
         
         const response = reply.response().hold();
-        response.source = 'Hello world';
         
         const pictureGenerator = new Aquarelle('./images/base');
         
@@ -31,15 +30,24 @@ server.register(inert, err => {
           height: 40,
         };
         
-        const output = './images/generated/' + uuid.v1() + '.png';
-        
-        pictureGenerator.generateFile(output, params).then(
-          () => response.send(),
-          err => {
-            response.source = err;
-            response.send();
-          }
-        );
+        const output = '/images/generated/' + uuid.v1() + '.png';
+        const outputPath = '.' + output;
+        try {
+          pictureGenerator.generateFile(outputPath, params).then(
+            () => {
+              response.source = '<html><body>' +
+                `<img src="${output}" />` +
+                '</body></html>';
+              response.send();
+            },
+            err => {
+              response.source = err;
+              response.send();
+            }
+          );
+        } catch (err) {
+          console.error(err);
+        }
       },
     },
   ]);
