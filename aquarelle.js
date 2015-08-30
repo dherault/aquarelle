@@ -9,6 +9,43 @@ function throwError(...msg) {
   throw new Error('Aquarelle -', ...msg);
 }
 
+function getAverage(array) {
+  let sum = 0;
+  array.forEach(item => sum += item);
+  return sum / array.length;
+}
+
+function getStandardDeviation(array) {
+  let sum = 0;
+  const average = getAverage(array);
+  array.forEach(item => {
+    const dif = item - average;
+    sum += dif * dif;
+  });
+  return Math.sqrt(sum / array.length);
+}
+
+// function rgbToHsl (r, g, b) { // with 0 to 1 values
+
+//   const max = Math.max(r, g, b);
+//   const min = Math.min(r, g, b);
+//   let h, s, l = (max + min) / 2;
+
+//   if (max === min) h = s = 0; // achromatic
+//   else {
+//     let d = max - min;
+//     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+//     switch (max) {
+//       case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+//       case g: h = (b - r) / d + 2; break;
+//       case b: h = (r - g) / d + 4; break;
+//     }
+//     h /= 6;
+//   }
+  
+//   return [h, s, l];
+// }
+
 export default class Aquarelle {
   
   constructor(baseDir) {
@@ -18,6 +55,7 @@ export default class Aquarelle {
     
     this.fileList = [];
     this.fileCount = 0;
+    this.dataExtractionRegexp = /\((.*)\)$/;
     this.baseDir = baseDir.endsWith('/') ? baseDir : baseDir + '/';
     this.dataKeys = ['Minimum', 'Maximum', 'Mean', 'Standard Deviation'];
     
@@ -77,7 +115,7 @@ export default class Aquarelle {
     
     return new Promise((resolve, reject) => {
       
-      if (cycleCount > 10) return reject('Too many cycles, check your base images');
+      if (cycleCount > 15) return reject('Too many cycles, check your base images');
       
       const filePath = this.fileList[Math.floor(Math.random() * this.fileCount)];
       const image = gm(filePath)
@@ -104,24 +142,53 @@ export default class Aquarelle {
           .identify((err, metadata) => {
             if (err) return reject(`Error while identifying cropped image ${filePath}: ${err.message}`);
             
+            let minSD = 0;
             const { Red, Green, Blue } = metadata['Channel Statistics'];
             
-            if (!Red || !Green || !Blue) return reject('Could not find all three RBG channels');
-            
-            const data = {};
-            const extractionRegexp = /\((.*)\)$/;
-            this.dataKeys.forEach(key => {
-              data[key] = [];
-              [Red, Green, Blue].forEach(channel => {
-                data[key].push(parseFloat(channel[key].match(extractionRegexp)[1], 10) * 100);
+            if (Red && Green && Blue) {
+              const data = {};
+              this.dataKeys.forEach(key => {
+                data[key] = [];
+                [Red, Green, Blue].forEach(channel => {
+                  data[key].push((parseFloat(channel[key].match(this.dataExtractionRegexp)[1], 10) * 100));
+                });
               });
-            });
+              
+              log(data);
+              
+              const meanRatios = [];
+              for (let i = 0; i < 3; i++) {
+                const min = data.Minimum[i];
+                meanRatios[i] = (100 * (data.Mean[i] - min) / (data.Maximum[i] - min));
+              }
+              
+              log();
+              // log(meanRatios);
+              
+              const SDOfSDs = getStandardDeviation(data['Standard Deviation']);
+              const SDOfMRs = getStandardDeviation(meanRatios);
+              
+              // const meanOfMeanRatios = (meanRatios[0] + meanRatios[1] + meanRatios[2]) / 3;
+              // log(meanOfMeanRatios);
+              // log(rgbToHsl.apply(this, data['Standard Deviation'].map(sd => sd / 100))[2]);
+              
+              // const meanRatios255 = meanRatios.map(r => r * 2.55);
+              const weights = [0.299, 0.587, 0.144];
+              const weighted = meanRatios.map((r, i) => r * r * weights[i]);
+              const sortOfBrightness = Math.round(Math.sqrt(weighted[0] + weighted[1] + weighted[2])) ;
+              const stupid = Math.round(SDOfSDs * SDOfMRs * 1000);
+              
+              log('SDOfSDs', SDOfSDs.toFixed(2));
+              log('SDOfMRs', SDOfMRs.toFixed(2));
+              log('brightness:', sortOfBrightness);
+              log('stupid:', stupid);
+              log(sortOfBrightness > 30 && sortOfBrightness < 80 ? 'ok' : 'fail' );
+              
+              minSD = Math.min.apply(Math, data['Standard Deviation']);
+            }
             
-            log(data);
-            
-            const minSD = Math.min.apply(Math, data['Standard Deviation']);
-            
-            if (minSD > 10) resolve(thumbnail); // algorithm, v1 (that easy)
+            // algorithm, v1 (that easy)
+            if (minSD > 10) resolve(thumbnail); 
             else this._generateOnePicture(options, cycleCount + 1).then(
               thumbnail => resolve(thumbnail),
               err => reject(err)
