@@ -36,7 +36,7 @@ server.register(inert, err => {
           pictureGenerator.generateFile(outputPath, params).then(
             () => {
               response.source = '<html><body>' +
-                `<img src="${output}" />` +
+                `<img src="${output}" style="border-radius: 20px;"/>` +
                 '</body></html>';
               response.send();
             },

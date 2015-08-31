@@ -41,7 +41,7 @@ const outputDir = __dirname + '/images/generated';
 // Profile picture options
 const newFilePath = outputDir + '/coolProfilePicture.png';
 const options = {
-  width: 40,  // If blank, throws exception
+  width: 40,  // If blank, rejects error
   height: 40, // If blank, equals width
   // ... more options to come
 };
@@ -75,6 +75,9 @@ MIT
 
 ### Next: improvement ideas
 
-Current algorithm: min([StandardDeviation(channel) *]) > 10% (color variety)
-
-Improvements: nColors / (w * h) > C1 (color density) and \[C2 < Mean(channel) < C3 *\] (not too pale or dark)
+- [ ] Streams!
+- [ ] More options.
+- [ ] A better algo.
+- [ ] Way better error handling.
+- [ ] Utils to check if eveything is ok.
+- [ ] Taking ppi into account ? Or allow resizing.
