@@ -1,3 +1,4 @@
+import fs from 'fs';
 import Hapi from 'hapi';
 import uuid from 'uuid';
 import inert from 'inert';
@@ -22,23 +23,51 @@ server.register(inert, err => {
       handler: (request, reply) => {
         
         const response = reply.response().hold();
-        
         const pictureGenerator = new Aquarelle('./images/base');
-        
-        const params = {
-          width: 40,
-          height: 40,
-        };
-        
         const output = '/images/generated/' + uuid.v1() + '.png';
-        const outputPath = '.' + output;
+        const params = { width: 40 };
+        
         try {
-          pictureGenerator.generateFile(outputPath, params).then(
+          pictureGenerator.generateFile('.' + output, params).then(
             () => {
               response.source = '<html><body>' +
                 `<img src="${output}" style="border-radius: 20px;"/>` +
                 '</body></html>';
               response.send();
+            },
+            err => {
+              response.source = err;
+              response.send();
+            }
+          );
+        } catch (err) {
+          console.error(err);
+        }
+      },
+    },
+    {
+      method: 'GET',
+      path: '/stream',
+      handler: (request, reply) => {
+        
+        const response = reply.response().hold();
+        const pictureGenerator = new Aquarelle('./images/base');
+        const output = '/images/generated/' + uuid.v1() + '.png';
+        const params = { width: 40 };
+        
+        try {
+          pictureGenerator.generateStream(params).then(
+            ({stdout, stderr}) => {
+              const writeStream = fs.createWriteStream('.' + output);
+              
+              writeStream.on('finish', () => {
+                response.source = '<html><body>' +
+                  `<img src="${output}" style="border-radius: 20px;"/>` +
+                  '</body></html>';
+                response.send();
+              });
+              
+              stdout.pipe(writeStream);
             },
             err => {
               response.source = err;

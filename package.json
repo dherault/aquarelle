@@ -1,6 +1,6 @@
 {
   "name": "aquarelle",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Random profile pictures with a sense of Art.",
   "main": "aquarelle.js",
   "directories": {
@@ -24,7 +24,7 @@
   "bugs": {
     "url": "https://github.com/AquestTechnologies/aquarelle/issues"
   },
-  "homepage": "https://github.com/AquestTechnologies/aquarelle#readme",
+  "homepage": "https://github.com/AquestTechnologies/aquarelle",
   "dependencies": {
     "gm": "^1.18.1"
   },

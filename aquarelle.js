@@ -1,50 +1,10 @@
 import fs from 'fs';
 import gm from 'gm';
 
+// Use this to enable/disable logging
 function log(...msg) {
-  if (1) console.log(...msg);
+  if (0) console.log(...msg);
 }
-
-// function throwError(...msg) {
-//   throw new Error('Aquarelle -', ...msg);
-// }
-
-// function getAverage(array) {
-//   let sum = 0;
-//   array.forEach(item => sum += item);
-//   return sum / array.length;
-// }
-
-// function getStandardDeviation(array) {
-//   let sum = 0;
-//   const average = getAverage(array);
-//   array.forEach(item => {
-//     const dif = item - average;
-//     sum += dif * dif;
-//   });
-//   return Math.sqrt(sum / array.length);
-// }
-
-// function rgbToHsl (r, g, b) { // with 0 to 1 values
-
-//   const max = Math.max(r, g, b);
-//   const min = Math.min(r, g, b);
-//   let h, s, l = (max + min) / 2;
-
-//   if (max === min) h = s = 0; // achromatic
-//   else {
-//     let d = max - min;
-//     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-//     switch (max) {
-//       case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-//       case g: h = (b - r) / d + 2; break;
-//       case b: h = (r - g) / d + 4; break;
-//     }
-//     h /= 6;
-//   }
-  
-//   return [h, s, l];
-// }
 
 export default class Aquarelle {
   
@@ -57,20 +17,18 @@ export default class Aquarelle {
     this.fileCount = 0;
     this.dataExtractionRegexp = /\((.*)\)$/;
     this.baseDir = baseDir.endsWith('/') ? baseDir : baseDir + '/';
-    // this.dataKeys = ['Minimum', 'Maximum', 'Mean', 'Standard Deviation'];
-    this.dataKeys = ['Mean', 'Standard Deviation'];
     
+    // Loops through every file in baseDir to find images
     this.ready = new Promise((resolve, reject) => {
       
       fs.readdir(baseDir, (err, files) => {
         if (err) return reject('Cannot read given baseDir', this.baseDir);
         
+        const statsPromises = [];
         const extensionRegexp = /(?:\.([^.]+))?$/;
         const validExtensionsRegexp = /png|jpe?g|webp|tiff|gif/i;
-        const statsPromises = [];
         
         files.forEach(file => statsPromises.push(new Promise(resolve => {
-          
           const filePath = this.baseDir + file;
           
           fs.stat(filePath, (err, stats) => {
@@ -98,25 +56,50 @@ export default class Aquarelle {
     });
   }
   
-  
-  _validate(options) {
-    
-    const { width, height } = options;
-    const errors = [];
-    if (!width || typeof width !== 'number' || !isFinite(width)) errors.push('Invalid width: ' + width);
-    if (height && (typeof width !== 'number' || !isFinite(width))) errors.push('Invalid height: ' + height);
-    
-    return errors.length ? errors : undefined;
+  _extractData(data) {
+    // Data from GM looks like 'rbg (frac)'. We only need the frac part * 100.
+    return parseFloat(data.match(this.dataExtractionRegexp)[1], 10) * 100;
   }
   
+  // Validates options, applies defaults and waits for baseDir scan to be over before calling the main loop
+  // Returns a valid thumbnail
+  _generateAGoodPicture(options) {
+    
+    return new Promise((resolve, reject) => {
+      
+      const errors = [];
+      const isNotANumber = n => typeof n !== 'number' || !isFinite(n);
+      const { width, height, minBrightness, maxBrightness, minSD, maxIterations } = options;
+      
+      if (minSD && isNotANumber(minSD)) errors.push('Invalid minSD: ' + minSD);
+      if (!width || isNotANumber(width)) errors.push('Invalid width: ' + width);
+      if (height && isNotANumber(height)) errors.push('Invalid height: ' + height);
+      if (minBrightness && isNotANumber(minBrightness)) errors.push('Invalid minBrightness: ' + minBrightness);
+      if (maxBrightness && isNotANumber(maxBrightness)) errors.push('Invalid maxBrightness: ' + maxBrightness);
+      if (maxIterations && isNotANumber(maxIterations)) errors.push('Invalid maxIterations: ' + maxIterations);
+      
+      if (errors.length) return reject(errors.join('; '));
+      
+      options.minSD = minSD || 10;
+      options.minBrightness = minBrightness || 30;
+      options.maxBrightness = maxBrightness || 80;
+      options.maxIterations = maxIterations || 15;
+      
+      this.ready.then(
+        () => this._generateOnePicture(options, 1).then(resolve, reject),
+        reject
+      );
+    });
+  }
   
+  // Will loop until a picture passes the quality check
   _generateOnePicture(options, cycleCount) {
     
     log('_generateOnePicture', cycleCount);
     
     return new Promise((resolve, reject) => {
       
-      if (cycleCount > 15) return reject('Too many cycles, check your base images');
+      if (cycleCount > options.maxIterations) return reject('Too many cycles, check your base images');
       
       const filePath = this.fileList[Math.floor(Math.random() * this.fileCount)];
       const image = gm(filePath)
@@ -124,10 +107,9 @@ export default class Aquarelle {
         if (err) return reject(`Error while reading image's dimensions for file ${filePath}: ${err.message}`);
         
         log(filePath);
-        // log(width, height);
         
         const newWidth = options.width;
-        const newHeight = options.height;
+        const newHeight = options.height || newWidth;
         
         if (newWidth > width || newHeight > height) return reject(`Given dimensions (${newWidth}x${newHeight}) are larger than original file's (${width}x${height}) - ${filePath}`);
         
@@ -136,69 +118,35 @@ export default class Aquarelle {
         
         image
         .crop(newWidth, newHeight, x, y)
-        .toBuffer((err, buffer) => {
+        .toBuffer((err, buffer) => { // toBuffer allows working on the cropped file
           if (err) return reject(`Error while buffering file ${filePath}: ${err.message}`);
           
           const thumbnail = gm(buffer)
           .identify((err, metadata) => {
             if (err) return reject(`Error while identifying cropped image ${filePath}: ${err.message}`);
             
-            let minSD = 0;
+            let minOfSD = 0;
             let brightness = 0;
+            const { minSD, minBrightness, maxBrightness } = options;
             const { Red, Green, Blue } = metadata['Channel Statistics'];
             
             if (Red && Green && Blue) {
               
-              const data = {};
-              this.dataKeys.forEach(key => {
-                data[key] = [];
-                [Red, Green, Blue].forEach(channel => {
-                  data[key].push((parseFloat(channel[key].match(this.dataExtractionRegexp)[1], 10) * 100));
-                });
+              const means = [];
+              const standardDeviations = [];
+              [Red, Green, Blue].forEach(channel => {
+                means.push(this._extractData(channel.Mean));
+                standardDeviations.push(this._extractData(channel['Standard Deviation']));
               });
               
-              // log(data);
-              
-              // const meanRatios = [];
-              // for (let i = 0; i < 3; i++) {
-              //   const min = data.Minimum[i];
-              //   meanRatios[i] = (100 * (data.Mean[i] - min) / (data.Maximum[i] - min));
-              // }
-              
-              // log();
-              // log(meanRatios);
-              
-              // const SDOfSDs = getStandardDeviation(data['Standard Deviation']);
-              // const SDOfMRs = getStandardDeviation(meanRatios);
-              // const stupid = Math.round(SDOfSDs * SDOfMRs * 1000);
-              
-              // const meanOfMeanRatios = (meanRatios[0] + meanRatios[1] + meanRatios[2]) / 3;
-              // log(meanOfMeanRatios);
-              // log(rgbToHsl.apply(this, data['Standard Deviation'].map(sd => sd / 100))[2]);
-              
-              // const meanRatios255 = meanRatios.map(r => r * 2.55);
-              // const weights = [0.299, 0.587, 0.144];
-              // const weighted = meanRatios.map((r, i) => r * r * weights[i]);
-              // const sortOfBrightness = Math.round(Math.sqrt(weighted[0] + weighted[1] + weighted[2])) ;
-              
-              const [a, b, c] = data.Mean;
+              const [a, b, c] = means;
               brightness = Math.round(Math.sqrt(0.299 * a * a + 0.587 * b * b + 0.144 * c * c));
-              
-              // log('SDOfSDs', SDOfSDs.toFixed(2));
-              // log('SDOfMRs', SDOfMRs.toFixed(2));
-              // log('brightness:', brightness);
-              // log('stupid:', stupid);
-              // log(brightness > 30 && brightness < 80 ? 'ok' : 'fail' );
-              
-              minSD = Math.min.apply(Math, data['Standard Deviation']);
+              minOfSD = Math.min.apply(Math, standardDeviations);
             }
             
-            // algorithm, v2
-            if (minSD > 10 && brightness > 30 && brightness < 80) resolve(thumbnail); 
-            else this._generateOnePicture(options, cycleCount + 1).then(
-              thumbnail => resolve(thumbnail),
-              err => reject(err)
-            );
+            // Quality condition, v2
+            if (minOfSD > minSD && brightness > minBrightness && brightness < maxBrightness) resolve(thumbnail); 
+            else this._generateOnePicture(options, cycleCount + 1).then(resolve, reject);
           });
         });
       });
@@ -210,19 +158,13 @@ export default class Aquarelle {
     
     return new Promise((resolve, reject) => {
       
-      const validationErrors = this._validate(options);
-      if (validationErrors) return reject(validationErrors.join('; '));
-      
-      this.ready.then(
-        () => this._generateOnePicture(options, 1).then(
-          thumbnail => thumbnail.write(newFilePath, err => {
-            if (err) return reject(`Error while saving new file: ${err.message}`);
-            
-            resolve();
-          }),
-          err => reject(err)
-        ),
-        err => reject(err)
+      this._generateAGoodPicture(options).then(
+        thumbnail => thumbnail.write(newFilePath, err => {
+          if (err) return reject(`Error while saving new file: ${err.message}`);
+          
+          resolve();
+        }),
+        reject
       );
     });
   }
@@ -232,12 +174,14 @@ export default class Aquarelle {
     
     return new Promise((resolve, reject) => {
       
-      const validationErrors = this._validate(options);
-      if (validationErrors) return reject(validationErrors.join('; '));
-      
-      this.ready.then(() => {
-        
-      });
+      this._generateAGoodPicture(options).then(
+        thumbnail => thumbnail.stream((err, stdout, stderr) => {
+          if (err) return reject(`Error while streaming new picture: ${err.message}`);
+          
+          resolve({stdout, stderr});
+        }),
+        reject
+      );
     });
   }
 }
