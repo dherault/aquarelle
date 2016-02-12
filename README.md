@@ -77,7 +77,7 @@ const options = {
   maxLoops: 15, // Maximum iterations before rejection of image
 };
 
-const imageGenerator = new Aquarelle(inputDir);
+const imageGenerator = new Aquarelle(baseDir);
 
 // Working with files
 imageGenerator.generateFile(newFilePath, options).then(
