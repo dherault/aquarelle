@@ -1,85 +1,127 @@
 import fs from 'fs';
+import path from 'path';
 import Hapi from 'hapi';
-import uuid from 'uuid';
 import inert from 'inert';
-import Aquarelle from '../aquarelle';
+import uuid from 'uuid';
+import Aquarelle from '../src';
 
-const port = 8080; // Change this if you want to
+const port = 3000; // Change port here!
 const server = new Hapi.Server();
-server.connection({ port });
 
+const baseDir = path.join(__dirname, 'public/base');
+const saveDir = path.join(__dirname, 'public/generated');
+const imageGenerator = new Aquarelle(baseDir, true); // Second arg is verbosity
+
+server.connection({ port });
 server.register(inert, err => {
-  if (err) throw err; 
+
+  if (err) throw err;
   
-  server.route([
-    {
-      method: 'GET',
-      path: '/images/{subfolder}/{file}',
-      handler: (request, reply) => reply.file(`images/${request.params.subfolder}/${request.params.file}`),
-    },
-    {
-      method: 'GET',
-      path: '/',
-      handler: (request, reply) => {
+  server.route({
+    method: 'GET',
+    path: '/public/{param*}',
+    handler: {
+      directory: {
+        path: './public',
+        listing: true,
+        index: false // won't return index.html on 'get /public' but a listing of the directory
+      }
+    }
+  });
+  
+  server.route({
+    method: 'GET',
+    path: '/stream/{width}',
+    handler: (request, reply) => {
+      
+      const response = reply.response().hold();
+      
+      imageGenerator.generateStream({ width: request.params.width })
+      .then(({ stdout, stderr, originalImageName }) => {
         
-        const response = reply.response().hold();
-        const pictureGenerator = new Aquarelle('./images/base');
-        const output = '/images/generated/' + uuid.v1() + '.png';
-        const params = { width: 40 };
+        const imageName = generateName();
+        const writeStream = fs.createWriteStream(saveDir + '/' + imageName);
         
-        try {
-          pictureGenerator.generateFile('.' + output, params).then(
-            () => {
-              response.source = '<html><body>' +
-                `<img src="${output}" style="border-radius: 20px;"/>` +
-                '</body></html>';
-              response.send();
-            },
-            err => {
-              response.source = err;
-              response.send();
-            }
-          );
-        } catch (err) {
-          console.error(err);
-        }
-      },
-    },
-    {
-      method: 'GET',
-      path: '/stream',
-      handler: (request, reply) => {
+        writeStream.on('finish', () => {
+          response.source = generateHTMLSuccess('/public/generated/' + imageName, '/public/base/' + originalImageName);
+          response.send();
+        });
         
-        const response = reply.response().hold();
-        const pictureGenerator = new Aquarelle('./images/base');
-        const output = '/images/generated/' + uuid.v1() + '.png';
-        const params = { width: 40 };
-        
-        try {
-          pictureGenerator.generateStream(params).then(
-            ({stdout, stderr}) => {
-              const writeStream = fs.createWriteStream('.' + output);
-              
-              writeStream.on('finish', () => {
-                response.source = '<html><body>' +
-                  `<img src="${output}" style="border-radius: 20px;"/>` +
-                  '</body></html>';
-                response.send();
-              });
-              
-              stdout.pipe(writeStream);
-            },
-            err => {
-              response.source = err;
-              response.send();
-            }
-          );
-        } catch (err) {
-          console.error(err);
-        }
-      },
-    },
-  ]);
+        stdout.pipe(writeStream);
+      })
+      .catch(err => {
+        response.source = generateHTMLError(err);
+        response.send();
+      });
+    }
+  });
+  
+  server.route({
+    method: 'GET',
+    path: '/file/{width}',
+    handler: (request, reply) => {
+      
+      const response = reply.response().hold();
+      const imageName = generateName();
+      
+      imageGenerator.generateFile(saveDir + '/' + imageName, { width: request.params.width })
+      .then(({ originalImageName }) => {
+        response.source = generateHTMLSuccess('/public/generated/' + imageName, '/public/base/' + originalImageName);
+        response.send();
+      })
+      .catch(err => {
+        response.source = generateHTMLError(err);
+        response.send();
+      });
+    }
+  });
+  
+  server.route({
+    method: 'GET',
+    path: '/',
+    handler: (request, reply) => reply('Try to call "/file/100" or "/stream/50"')
+  });
+  
+  
+  server.start(err => {
+    if (err) throw err;
+    console.log('Aquarelle example listening on port', port);
+  });
 });
 
-server.start(() => console.log(`Make it rain! API server started at ${server.info.uri}`));
+function generateHTMLSuccess(src1, src2) {
+  return `<html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Aquarelle</title>
+    </head>
+    <body>
+      <div>
+        <div>Generated image:</div>
+        <img src="${src1}" />
+      </div>
+      <br />
+      <div>
+        <div>Base image:</div>
+        <img src="${src2}" />
+      <div>
+    </body>
+  </html>`;
+}
+
+function generateHTMLError(message) {
+  return `<html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Aquarelle</title>
+    </head>
+    <body>
+      <span>Error: </span>
+      <span>${message}</span>
+    </body>
+  </html>`;
+}
+
+function generateName() {
+  return uuid.v4() + '.png';
+}
