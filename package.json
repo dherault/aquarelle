@@ -3,9 +3,6 @@
   "version": "0.2.1",
   "description": "Random profile pictures with a sense of Art.",
   "main": "lib/index.js",
-  "directories": {
-    "example": "example"
-  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "rimraf lib",
@@ -15,14 +12,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AquestTechnologies/aquarelle.git"
+    "url": "git@github.com:dherault/Aquarelle.git"
   },
   "keywords": [
     "picture",
     "profile",
     "random",
-    "image",
-    "graphicsmagick"
+    "image"
   ],
   "author": "David Hérault <dherault@gmail.com> (https://github.com/dherault)",
   "license": "MIT",
@@ -31,11 +27,8 @@
   },
   "homepage": "https://github.com/dherault/Aquarelle",
   "dependencies": {
-    "gm": "^1.21.1"
+    "sharp": "^0.20.2",
+    "uuid": "^3.2.1"
   },
-  "devDependencies": {
-    "babel-preset-es2015": "^6.5.0",
-    "babel-preset-stage-2": "^6.5.0",
-    "rimraf": "^2.5.1"
-  }
+  "devDependencies": {}
 }
