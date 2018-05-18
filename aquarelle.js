@@ -57,6 +57,4 @@ function aquarelle(width, height, saveDirectory) {
   });
 }
 
-aquarelle(128, 128, path.join(__dirname, 'output'))
-
 module.exports = aquarelle;
