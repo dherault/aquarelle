@@ -1,14 +1,10 @@
 {
   "name": "aquarelle",
-  "version": "0.2.1",
+  "version": "1.0.0",
   "description": "Random profile pictures with a sense of Art.",
-  "main": "lib/index.js",
+  "main": "aquarelle.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "rimraf lib",
-    "build": "babel src --out-dir lib",
-    "x": "npm run clean && npm run build",
-    "e": "cd example && npm start"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
