@@ -4,12 +4,12 @@ Aquarelle is a random profile picture generator, based on famous paintings.
 
 ## Example thumbnails
 
-![](https://imgur.com/29wqN0T) .
-![](https://imgur.com/lSpkUWJ) .
-![](https://imgur.com/XNk6VR8) .
-![](https://imgur.com/Z0K32ZG) .
-![](https://imgur.com/NrVkJgd) .
-![](https://imgur.com/a8pCTGT)
+![](https://i.imgur.com/29wqN0T.png) .
+![](https://i.imgur.com/lSpkUWJ.png) .
+![](https://i.imgur.com/XNk6VR8.png) .
+![](https://i.imgur.com/Z0K32ZG.png) .
+![](https://i.imgur.com/NrVkJgd.png) .
+![](https://i.imgur.com/a8pCTGT.png)
 
 ## Installation
 
