@@ -1,5 +1,7 @@
 # Aquarelle
 
+![npm](https://img.shields.io/npm/v/aquarelle?color=success)
+
 Aquarelle is a random profile picture generator, based on famous paintings.
 
 ## Example thumbnails
