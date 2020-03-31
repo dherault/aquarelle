@@ -1,6 +1,6 @@
 {
   "name": "aquarelle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Random profile pictures with a sense of Art.",
   "main": "aquarelle.js",
   "scripts": {
@@ -23,8 +23,11 @@
   },
   "homepage": "https://github.com/dherault/Aquarelle",
   "dependencies": {
-    "sharp": "^0.20.2",
-    "uuid": "^3.2.1"
+    "sharp": "^0.25.2",
+    "uuid": "^7.0.2"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-dherault": "^1.0.9"
+  }
 }
