@@ -46,13 +46,13 @@ function aquarelle(width, height, saveDirectory) {
       return image
       .toFile(outputFilePath)
       .then(() => ({
+        ...inputMetadata,
         width,
         height,
         originalFileName: inputMetadata.fileName,
         originalFilePath: inputFilePath,
         fileName: outputFileName,
         filePath: outputFilePath,
-        ...inputMetadata,
       }))
     })
   )
