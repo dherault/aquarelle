@@ -37,11 +37,12 @@ function aquarelle(width, height, saveDirectory) {
       const sdg = channels[1].stdev
       const sdb = channels[2].stdev
 
-      const brightness = Math.sqrt(0.2126 * r * r + 0.7152 * g * g + 0.0722 * b * b)
       const minOfSd = Math.min(sdr, sdg, sdb)
+      const brightness = Math.sqrt(0.2126 * r * r + 0.7152 * g * g + 0.0722 * b * b)
+      const hsp = Math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b) // HSP (Highly Sensitive Poo) equation from http://alienryderflex.com/hsp.html
 
       // Thumbnail quality condition
-      if (minOfSd < 35 || brightness < 50 || brightness > 150) return aquarelle(width, height, saveDirectory)
+      if (minOfSd < 35 || brightness < 50 || brightness > 150 || hsp <= 127.5) return aquarelle(width, height, saveDirectory)
 
       return image
       .toFile(outputFilePath)
