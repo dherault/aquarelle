@@ -23,10 +23,14 @@ function aquarelle(width, height, saveDirectory) {
 
   return image
   .metadata()
-  .then(metadata => image
+  .then(metadata => {
+    const top = Math.floor(Math.random() * (metadata.height - height))
+    const left = Math.floor(Math.random() * (metadata.width - width))
+
+    return image
     .extract({
-      top: Math.floor(Math.random() * (metadata.height - height)),
-      left: Math.floor(Math.random() * (metadata.width - width)),
+      top,
+      left,
       width,
       height,
     })
@@ -52,13 +56,15 @@ function aquarelle(width, height, saveDirectory) {
         ...inputMetadata,
         width,
         height,
+        top,
+        left,
         originalFileName: inputMetadata.fileName,
         originalFilePath: inputFilePath,
         fileName: outputFileName,
         filePath: outputFilePath,
       }))
     })
-  )
+  })
 }
 
 module.exports = aquarelle
