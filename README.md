@@ -20,9 +20,9 @@ Aquarelle is a random profile picture generator, based on famous paintings.
 ## Usage
 
 ```js
-const aquarelle = require('aquarelle');
+const aquarelle = require('aquarelle')
 
-aquarelle(128, 128, '/path/to/output/dir').then(({
+const {
   width,
   height,
   title,
@@ -32,7 +32,9 @@ aquarelle(128, 128, '/path/to/output/dir').then(({
   filePath,
   originalFileName,
   originalFilePath,
-}) => console.log('Profile picture generated!', filePath));
+} = await aquarelle(128, 128, '/path/to/output/dir')
+
+console.log('Profile picture generated!', filePath) // /path/to/output/dir/f8b80502-19c6-4b7e-ad8e-acc1e793b952.png
 ```
 
 ## License

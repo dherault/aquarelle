@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+
 const data = require('../data.json')
 
 const imagesDir = path.join(__dirname, '../images')

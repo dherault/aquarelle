@@ -1,4 +1,5 @@
 const path = require('path')
+
 const sharp = require('sharp')
 const uuid = require('uuid').v4
 
@@ -9,6 +10,7 @@ const maxWidth = 500
 const maxHeight = 326
 
 function aquarelle(width, height, saveDirectory) {
+  if (typeof width !== 'number' || typeof height !== 'number') throw new Error('You need to specify dimensions as numbers.')
   if (width > maxWidth || height > maxHeight) throw new Error('Given dimensions are too large.')
   if (typeof saveDirectory !== 'string') throw new Error('You need to specify an output folder.')
 

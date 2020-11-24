@@ -1,5 +1,7 @@
 const path = require('path')
+
 const sharp = require('sharp')
+
 const data = require('../data.json')
 
 let minWidth = Infinity
