@@ -1,21 +1,39 @@
-const path = require('path')
+import path from 'path'
 
-const sharp = require('sharp')
-const uuid = require('uuid').v4
+import sharp from 'sharp'
+import { v4 as uuid } from 'uuid'
 
-const data = require('./data.json')
+import data from '../data.json'
 
 // From checkDimensions
 const maxWidth = 500
 const maxHeight = 326
 
-function aquarelle(width, height, saveDirectory) {
+type AquarelleInputMetadataType = {
+  fileName: string
+  year: string
+  author: string
+  title: string
+}
+
+type AquarelleType = AquarelleInputMetadataType & {
+  width: number
+  height: number
+  top: number
+  left: number
+  originalFileName: string
+  originalFilePath: string
+  fileName: string
+  filePath: string
+}
+
+async function aquarelle(width: number, height: number, saveDirectory: string): Promise<AquarelleType | null> {
   if (typeof width !== 'number' || typeof height !== 'number') throw new Error('You need to specify dimensions as numbers.')
   if (width > maxWidth || height > maxHeight) throw new Error('Given dimensions are too large.')
   if (typeof saveDirectory !== 'string') throw new Error('You need to specify an output folder.')
 
-  const inputMetadata = data[Math.floor(Math.random() * data.length)]
-  const inputFilePath = path.join(__dirname, 'images', inputMetadata.fileName)
+  const inputMetadata: AquarelleInputMetadataType = data[Math.floor(Math.random() * data.length)]
+  const inputFilePath = path.resolve(__dirname, '../../images', inputMetadata.fileName)
 
   const image = sharp(inputFilePath)
   const outputFileName = `${uuid()}.png`
@@ -24,6 +42,9 @@ function aquarelle(width, height, saveDirectory) {
   return image
   .metadata()
   .then(metadata => {
+    if (typeof metadata.width !== 'number') return null
+    if (typeof metadata.height !== 'number') return null
+
     const top = Math.floor(Math.random() * (metadata.height - height))
     const left = Math.floor(Math.random() * (metadata.width - width))
 
@@ -67,4 +88,4 @@ function aquarelle(width, height, saveDirectory) {
   })
 }
 
-module.exports = aquarelle
+export default aquarelle
