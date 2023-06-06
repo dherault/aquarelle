@@ -26,13 +26,13 @@
   },
   "homepage": "https://github.com/dherault/Aquarelle",
   "dependencies": {
-    "sharp": "^0.31.1",
+    "sharp": "^0.32.1",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "@types/sharp": "^0.31.0",
-    "@types/uuid": "^8.3.4",
-    "eslint": "^8.26.0",
-    "eslint-config-dherault-typescript": "^1.0.0"
+    "@types/sharp": "^0.31.1",
+    "@types/uuid": "^9.0.1",
+    "eslint": "^8.42.0",
+    "eslint-config-dherault-typescript": "^1.2.0"
   }
 }
