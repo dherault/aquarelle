@@ -9,14 +9,14 @@ import data from '../data.json'
 const maxWidth = 500
 const maxHeight = 326
 
-type AquarelleInputMetadataType = {
+type AquarelleInputMetadata = {
   fileName: string
   year: string
   author: string
   title: string
 }
 
-type AquarelleType = AquarelleInputMetadataType & {
+type AquarelleOutput = AquarelleInputMetadata & {
   width: number
   height: number
   top: number
@@ -27,12 +27,12 @@ type AquarelleType = AquarelleInputMetadataType & {
   filePath: string
 }
 
-async function aquarelle(width: number, height: number, saveDirectory: string): Promise<AquarelleType | null> {
+async function aquarelle(width: number, height: number, saveDirectory: string): Promise<AquarelleOutput | null> {
   if (typeof width !== 'number' || typeof height !== 'number') throw new Error('You need to specify dimensions as numbers.')
   if (width > maxWidth || height > maxHeight) throw new Error('Given dimensions are too large.')
   if (typeof saveDirectory !== 'string') throw new Error('You need to specify an output folder.')
 
-  const inputMetadata: AquarelleInputMetadataType = data[Math.floor(Math.random() * data.length)]
+  const inputMetadata: AquarelleInputMetadata = data[Math.floor(Math.random() * data.length)]
   const inputFilePath = path.resolve(__dirname, '../../images', inputMetadata.fileName)
 
   const image = sharp(inputFilePath)
